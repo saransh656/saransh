@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVote - Online E-Voting System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --secondary: #10b981;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #0d9488;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e2e8f0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            transition: width 0.5s ease;
+        }
+        
+        .floating-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 50;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 500px;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .candidate-card.selected {
+            border: 2px solid var(--primary);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-vote-yea text-3xl text-indigo-600"></i>
+                <h1 class="text-2xl font-bold text-gray-800">Secure<span class="text-indigo-600">Vote</span></h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-2">
+                    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" class="w-8 h-8 rounded-full">
+                    <span class="text-gray-700 font-medium">John Doe</span>
+                </div>
+                <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Dashboard Overview -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Active Elections Card -->
+                <div class="card bg-white rounded-xl p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500">Active Elections</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2">3</h3>
+                        </div>
+                        <div class="bg-indigo-100 p-3 rounded-lg">
+                            <i class="fas fa-calendar-check text-indigo-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 75%"></div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">3 days remaining</p>
+                    </div>
+                </div>
+                
+                <!-- Total Votes Card -->
+                <div class="card bg-white rounded-xl p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500">Total Votes Cast</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2">1,248</h3>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-lg">
+                            <i class="fas fa-chart-bar text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center text-sm">
+                            <span class="text-green-600 font-medium">+12%</span>
+                            <span class="text-gray-500 ml-2">from last week</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Your Participation Card -->
+                <div class="card bg-white rounded-xl p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-gray-500">Your Participation</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2">2/3</h3>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-lg">
+                            <i class="fas fa-user-check text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 66%"></div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">1 election remaining</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Elections Section -->
+        <section class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Current Elections</h2>
+                <div class="flex space-x-2">
+                    <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                        <i class="fas fa-plus mr-2"></i>New Election
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="bg-white rounded-xl shadow-sm mb-6">
+                <div class="flex border-b">
+                    <button class="tab-btn px-6 py-3 font-medium text-indigo-600 border-b-2 border-indigo-600" data-tab="active">Active Elections</button>
+                    <button class="tab-btn px-6 py-3 font-medium text-gray-500 hover:text-gray-700" data-tab="upcoming">Upcoming</button>
+                    <button class="tab-btn px-6 py-3 font-medium text-gray-500 hover:text-gray-700" data-tab="completed">Completed</button>
+                </div>
+                
+                <!-- Tab Content -->
+                <div class="p-6">
+                    <!-- Active Elections Tab -->
+                    <div id="active" class="tab-content active">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Election Card 1 -->
+                            <div class="card bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-indigo-300 transition">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="text-xl font-bold text-gray-800">Student Council Election</h3>
+                                            <p class="text-gray-500 mt-1">University of Technology</p>
+                                        </div>
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Active</span>
+                                    </div>
+                                    <div class="mt-4 flex items-center text-sm text-gray-500">
+                                        <i class="far fa-calendar-alt mr-2"></i>
+                                        <span>Ends in 3 days</span>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                                            <span>Participation</span>
+                                            <span>65%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 65%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">5 candidates</span>
+                                    <button class="btn-primary text-white px-4 py-2 rounded-lg text-sm">
+                                        <i class="fas fa-vote-yea mr-2"></i>Vote Now
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Election Card 2 -->
+                            <div class="card bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-indigo-300 transition">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="text-xl font-bold text-gray-800">Department Head</h3>
+                                            <p class="text-gray-500 mt-1">Computer Science</p>
+                                        </div>
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Active</span>
+                                    </div>
+                                    <div class="mt-4 flex items-center text-sm text-gray-500">
+                                        <i class="far fa-calendar-alt mr-2"></i>
+                                        <span>Ends in 5 days</span>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                                            <span>Participation</span>
+                                            <span>42%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 42%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">3 candidates</span>
+                                    <button class="btn-primary text-white px-4 py-2 rounded-lg text-sm">
+                                        <i class="fas fa-vote-yea mr-2"></i>Vote Now
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Election Card 3 -->
+                            <div class="card bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-indigo-300 transition">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="text-xl font-bold text-gray-800">Sports Committee</h3>
+                                            <p class="text-gray-500 mt-1">University of Technology</p>
+                                        </div>
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Active</span>
+                                    </div>
+                                    <div class="mt-4 flex items-center text-sm text-gray-500">
+                                        <i class="far fa-calendar-alt mr-2"></i>
+                                        <span>Ends in 7 days</span>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                                            <span>Participation</span>
+                                            <span>28%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 28%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">4 candidates</span>
+                                    <button class="btn-primary text-white px-4 py-2 rounded-lg text-sm">
+                                        <i class="fas fa-vote-yea mr-2"></i>Vote Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Upcoming Elections Tab -->
+                    <div id="upcoming" class="tab-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Upcoming Election Card -->
+                            <div class="card bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-indigo-300 transition">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="text-xl font-bold text-gray-800">Faculty Senate</h3>
+                                            <p class="text-gray-500 mt-1">University of Technology</p>
+                                        </div>
+                                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Upcoming</span>
+                                    </div>
+                                    <div class="mt-4 flex items-center text-sm text-gray-500">
+                                        <i class="far fa-calendar-alt mr-2"></i>
+                                        <span>Starts in 2 days</span>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                                            <span>Candidates</span>
+                                            <span>7 registered</span>
+                                        </div>
+                                        <div class="progress-bar bg-blue-100">
+                                            <div class="progress-fill bg-blue-500" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">All departments</span>
+                                    <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-300 transition">
+                                        <i class="fas fa-info-circle mr-2"></i>Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Completed Elections Tab -->
+                    <div id="completed" class="tab-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Completed Election Card -->
+                            <div class="card bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-indigo-300 transition">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h3 class="text-xl font-bold text-gray-800">Class Representative</h3>
+                                            <p class="text-gray-500 mt-1">Computer Science - 2023</p>
+                                        </div>
+                                        <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Completed</span>
+                                    </div>
+                                    <div class="mt-4 flex items-center text-sm text-gray-500">
+                                        <i class="far fa-calendar-alt mr-2"></i>
+                                        <span>Ended 2 weeks ago</span>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                                            <span>Participation</span>
+                                            <span>89%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 89%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">Winner: Sarah Johnson</span>
+                                    <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-300 transition">
+                                        <i class="fas fa-chart-pie mr-2"></i>Results
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Activity -->
+        <section>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Recent Activity</h2>
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Election</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-vote-yea text-indigo-600"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Student Council Election</div>
+                                            <div class="text-sm text-gray-500">University of Technology</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Vote Cast
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    2 hours ago
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        Processing
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-vote-yea text-indigo-600"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Department Head</div>
+                                            <div class="text-sm text-gray-500">Computer Science</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Vote Cast
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    1 day ago
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Verified
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-user-shield text-indigo-600"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Account Verification</div>
+                                            <div class="text-sm text-gray-500">Identity Confirmation</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                        Verification
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    3 days ago
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Completed
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Floating Action Button -->
+    <button class="floating-btn bg-indigo-600 text-white pulse" id="helpBtn">
+        <i class="fas fa-question text-xl"></i>
+    </button>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Need Help?</h3>
+                    <button class="text-gray-400 hover:text-gray-500" id="closeHelpModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-2">How to vote?</h4>
+                        <p class="text-gray-600 text-sm">Navigate to "Active Elections", select an election, choose your candidate, and confirm your vote. You can only vote once per election.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-2">Voting Security</h4>
+                        <p class="text-gray-600 text-sm">Our system uses blockchain technology to ensure your vote is secure, anonymous, and tamper-proof. Your identity is never linked to your vote.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-800 mb-2">Having issues?</h4>
+                        <p class="text-gray-600 text-sm">Contact our support team at support@securevote.edu or call +1 (555) 123-4567 during business hours.</p>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <button class="btn-primary text-white w-full py-2 rounded-lg">
+                        <i class="fas fa-headset mr-2"></i>Contact Support
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voting Modal -->
+    <div class="modal-overlay" id="votingModal">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+
+</html>
